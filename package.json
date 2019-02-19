@@ -1,5 +1,5 @@
 {
-  "name": "upload-oss",
+  "name": "@jarvisniu/upload-oss",
   "version": "0.1.0",
   "main": "cli.js",
   "repository": "git@github.com:jarvisniu/upload-oss.git",
