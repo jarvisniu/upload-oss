@@ -15,12 +15,12 @@ let client = new OSS({
   bucket: process.env.OSS_BUCKET,
 })
 
-let options = {} // TODO read args
+let args = require('minimist')(process.argv.slice(2))
 
-let OSS_BASE_DIR = options.ossBaseDir || ''
-let OUTPUT_DIR = options.outputDir || process.env.outputDir || 'dist'
+const OSS_BASE_DIR = args.ossBaseDir || ''
+const OUTPUT_DIR = args.outputDir || process.env.outputDir || 'dist'
 
-glob(normalize(OUTPUT_DIR + '/**/*'), async (err, files) => {
+glob(normalize(OUTPUT_DIR + '/**/*'), { nodir: true }, async (err, files) => {
   if (err) throw err
 
   for (let file of files) {
