@@ -20,20 +20,34 @@ let args = require('minimist')(process.argv.slice(2))
 const OSS_BASE_DIR = args.ossBaseDir || ''
 const OUTPUT_DIR = args.outputDir || process.env.outputDir || 'dist'
 
+// '[====>-------] [ 2/18] Message'
+function progressMsg (index, count, msg) {
+  const BAR_LEN = 10
+  let num = String(index)
+  let len = String(count).length
+  let doneLen = Math.floor((index / count) * BAR_LEN)
+  let restLen = BAR_LEN - doneLen
+  let barMsg = '='.repeat(doneLen) + '>' + '-'.repeat(restLen)
+  let numMsg = num.padStart(len) + '/' + count
+  return `[${ barMsg }] [${ numMsg }] ${ msg }`
+}
+
 glob(normalize(OUTPUT_DIR + '/**/*'), { nodir: true }, async (err, files) => {
   if (err) throw err
 
-  for (let file of files) {
+  console.log(`Uploading OSS from path ${ OUTPUT_DIR }/ to path ${ OSS_BASE_DIR }/`)
+  let spinner = ora().start()
+  for (let i = 0, len = files.length; i < len; i++) {
+    let file = files[i]
     let filename = relative.toBase(OUTPUT_DIR, file)
-    let spinner = ora(`Uploading ${ file } ...`).start()
     try {
       let targetPath = normalize(OSS_BASE_DIR + '/' + filename)
+      spinner.text = progressMsg(i, len, `Uploading ${ filename }`)
       await client.put(targetPath, file)
-      spinner.succeed(`Upload ${ filename } succeeded.`)
     } catch (err) {
-      spinner.fail(`Upload ${ filename } failed.`)
+      spinner.fail(progressMsg(i, len, `Upload ${ filename } failed.`))
       throw err
     }
   }
-  ora().succeed('All files have been successfully uploaded!')
+  spinner.succeed(progressMsg(files.length, files.length, `Upload completed!`))
 })
