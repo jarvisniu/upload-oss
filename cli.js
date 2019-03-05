@@ -17,8 +17,9 @@ let client = new OSS({
 
 let args = require('minimist')(process.argv.slice(2))
 
-const OSS_BASE_DIR = args.ossBaseDir || ''
 const OUTPUT_DIR = args.outputDir || process.env.outputDir || 'dist'
+const OSS_BASE_DIR = args.ossBaseDir || ''
+const CLEAN = args.clean || false
 
 // '[====>-------] [ 2/18] Message'
 function progressMsg (index, count, msg) {
@@ -32,22 +33,74 @@ function progressMsg (index, count, msg) {
   return `[${ barMsg }] [${ numMsg }] ${ msg }`
 }
 
-glob(normalize(OUTPUT_DIR + '/**/*'), { nodir: true }, async (err, files) => {
-  if (err) throw err
+function listLocalFiles () {
+  return new Promise(function (resolve, reject) {
+    glob(normalize(OUTPUT_DIR + '/**/*'), { nodir: true }, async (err, files) => {
+      if (err) reject(err)
 
-  console.log(`Uploading OSS from path ${ OUTPUT_DIR }/ to path ${ OSS_BASE_DIR }/`)
+      resolve(files.map(file => ({
+        localPath: file,
+        relativePath: relative.toBase(OUTPUT_DIR, file),
+      })))
+    })
+  })
+}
+
+async function main () {
+  let localFiles = await listLocalFiles()
+  if (localFiles.length === 0) {
+    ora().fail('[upload-oss] No local files found, uploading stopped!')
+    return
+  }
+
+  await uploadOss(localFiles)
+  if (CLEAN) await cleanOss(localFiles)
+}
+
+async function uploadOss (localFiles) {
+  console.log(`[upload-oss] Uploading files from local directory ${ OUTPUT_DIR }/ to target directory ${ OSS_BASE_DIR }/`)
   let spinner = ora().start()
-  for (let i = 0, len = files.length; i < len; i++) {
-    let file = files[i]
-    let filename = relative.toBase(OUTPUT_DIR, file)
+  for (let i = 0, len = localFiles.length; i < len; i++) {
+    let file = localFiles[i]
     try {
-      let targetPath = normalize(OSS_BASE_DIR + '/' + filename)
-      spinner.text = progressMsg(i, len, `Uploading ${ filename }`)
-      await client.put(targetPath, file)
+      let ossPath = normalize(OSS_BASE_DIR + '/' + file.relativePath)
+      spinner.text = progressMsg(i, len, `Uploading ${ file.relativePath }`)
+      await client.put(ossPath, file.localPath)
     } catch (err) {
-      spinner.fail(progressMsg(i, len, `Upload ${ filename } failed.`))
+      spinner.fail(progressMsg(i, len, `Upload ${ file.relativePath } failed.`))
       throw err
     }
   }
-  spinner.succeed(progressMsg(files.length, files.length, `Upload completed!`))
-})
+  spinner.succeed(progressMsg(localFiles.length, localFiles.length, `Upload completed!`))
+}
+
+async function cleanOss (localFiles) {
+  let relativeLocalPaths = localFiles.map(item => item.relativePath)
+  let listResp = await client.list({ prefix: OSS_BASE_DIR })
+  let ossFilePaths = listResp.objects.map(item => item.name)
+
+  // get redundant files
+  let redundantOssFilePaths = ossFilePaths.filter(ossFilePath => {
+    let relativeOssFilePath = relative.toBase(OUTPUT_DIR, ossFilePath)
+    return !relativeLocalPaths.includes(relativeOssFilePath)
+  })
+
+  console.log([
+    `Local files count: ${ localFiles.length },`,
+    `OSS files count: ${ ossFilePaths.length },`,
+    `redundant files count: ${ redundantOssFilePaths.length }`,
+    `(${ Math.round(redundantOssFilePaths.length / ossFilePaths.length * 100) }%).`,
+  ].join(' '))
+
+  if (redundantOssFilePaths.length === 0) {
+    console.log('There is no redundant files, skip cleaning.')
+  } else {
+    let spinner = ora().start(`Cleaning OSS path ${ OSS_BASE_DIR }/`)
+    await client.deleteMulti(redundantOssFilePaths)
+    spinner.succeed(`Cleaning OSS completed`)
+  }
+}
+
+if (require.main === module) {
+  main()
+}

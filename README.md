@@ -33,7 +33,11 @@ Or in npm scripts:
 
 ## CLI Args
 
-`npx upload-oss --outputDir=dist --ossBaseDir=my-app`
+`npx upload-oss --outputDir=dist --ossBaseDir=my-app --clean`
+
+- `outputDir`: local source directory, default is `/dist`
+- `ossBaseDir`: oss target directory, default is `/`
+- `clean`: Whether to diff and clean the oss target directory after uploading, default is `false`.
 
 ## TODO
 

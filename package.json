@@ -1,9 +1,9 @@
 {
   "name": "@jarvisniu/upload-oss",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "cli.js",
   "scripts": {
-    "dev": "node ./cli.js"
+    "dev": "node ./cli.js --ossBaseDir=dev --clean"
   },
   "bin": {
     "upload-oss": "./cli.js"
