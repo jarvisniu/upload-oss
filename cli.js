@@ -76,12 +76,15 @@ async function uploadOss (localFiles) {
 
 async function cleanOss (localFiles) {
   let relativeLocalPaths = localFiles.map(item => item.relativePath)
-  let listResp = await client.list({ prefix: OSS_BASE_DIR })
+  let listResp = await client.list({
+    'prefix': OSS_BASE_DIR,
+    'max-keys': 1000,
+  })
   let ossFilePaths = listResp.objects.map(item => item.name)
 
   // get redundant files
   let redundantOssFilePaths = ossFilePaths.filter(ossFilePath => {
-    let relativeOssFilePath = relative.toBase(OUTPUT_DIR, ossFilePath)
+    let relativeOssFilePath = relative.toBase(OSS_BASE_DIR, ossFilePath)
     return !relativeLocalPaths.includes(relativeOssFilePath)
   })
 
