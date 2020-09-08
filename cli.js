@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 require('dotenv').config()
 
-const path = require('path')
-
 const OSS = require('ali-oss')
 const glob = require('glob')
 const ora = require('ora')
@@ -24,8 +22,17 @@ const client = new OSS({
 
 const args = require('minimist')(process.argv.slice(2))
 const OUTPUT_DIR = args['output-dir'] || process.env['output-dir'] || 'dist'
-const OSS_BASE_DIR = args['oss-base-dir'] || ''
+const OSS_BASE_DIR = args['oss-base-dir'] || '/'
 const CLEAN = args.clean || false
+
+// Stop if unknown args were provided
+const allowedArgs = ['_', 'output-dir', 'oss-base-dir', 'clean']
+Object.keys(args).forEach(arg => {
+  if (!allowedArgs.includes(arg)) {
+    ora().fail(`[upload-oss] Unknown arg "${arg}" provided, program stopped!`)
+    process.exit()
+  }
+})
 
 // '[====>-------] [ 2/18] Message'
 function progressMsg (index, count, msg) {
@@ -53,7 +60,12 @@ function listLocalFiles () {
 }
 
 async function main () {
-  const localFiles = await listLocalFiles()
+  let localFiles = await listLocalFiles()
+  // Sort 'index.html' to the last, then site will not crash during upload
+  localFiles.sort((a, b) => {
+    if (a.relativePath === 'index.html') return 1
+    else if (b.relativePath === 'index.html') return -1
+  })
   if (localFiles.length === 0) {
     ora().fail('[upload-oss] No local files found, uploading canceled!')
     return
@@ -74,16 +86,21 @@ async function uploadOss (localFiles) {
       await client.put(ossPath, file.localPath)
     } catch (err) {
       spinner.fail(progressMsg(i, len, `Upload ${ file.relativePath } failed.`))
-      throw err
+      ora().fail(`[upload-oss] Error: ${err.message} Uploading canceled!`)
+      process.exit()
     }
   }
   spinner.succeed(progressMsg(localFiles.length, localFiles.length, `Upload completed!`))
 }
 
 async function cleanOss (localFiles) {
+  if (/\/?^$/.test(OSS_BASE_DIR)) {
+    console.log(`[upload-oss] oss-base-dir not set, clean is canceled.`)
+    return
+  }
   const relativeLocalPaths = localFiles.map(item => item.relativePath)
   const listResp = await client.list({
-    'prefix': path.posix.normalize(OSS_BASE_DIR + '/'),
+    'prefix': normalize(OSS_BASE_DIR + '/'),
     'max-keys': 1000,
   })
   const ossFilePaths = listResp.objects.map(item => item.name)
