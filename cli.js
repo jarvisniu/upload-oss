@@ -100,7 +100,7 @@ async function cleanOss (localFiles) {
   }
   const relativeLocalPaths = localFiles.map(item => item.relativePath)
   const listResp = await client.list({
-    'prefix': normalize(OSS_BASE_DIR + '/'),
+    'prefix': normalize(OSS_BASE_DIR) + '/',
     'max-keys': 1000,
   })
   const ossFilePaths = listResp.objects.map(item => item.name)
