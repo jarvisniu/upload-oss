@@ -1,6 +1,6 @@
 # upload-oss
 
-Upload build files to aliyun oss
+Upload dist files to Aliyun OSS with one command
 
 ## Usage
 
@@ -26,22 +26,18 @@ Or in npm scripts:
 ``` json
 {
   "scripts": {
-    "upload": "upload-oss"
+    "upload": "upload-oss --oss-base-dir my-app-dir"
   }
 }
 ```
 
 ## CLI Args
 
-`npx upload-oss --outputDir=dist --ossBaseDir=my-app --clean`
+`npx upload-oss --output-dir dist --oss-base-dir my-app --clean`
 
-- `outputDir`: local source directory, default is `/dist`
-- `ossBaseDir`: oss target directory, default is `/`
-- `clean`: Whether to diff and clean the oss target directory after uploading, default is `false`.
-
-## TODO
-
-- [ ] Prompt env vars not found
+- `output-dir`: local source directory, default is `dist`
+- `oss-base-dir`: oss target directory, default is `/`
+- `clean`: Whether to diff and clean the oss target directory after uploading, default is `false`
 
 ## Licence
 

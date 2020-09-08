@@ -1,9 +1,9 @@
 {
   "name": "@jarvisniu/upload-oss",
-  "version": "0.2.3",
+  "version": "1.0.0",
   "main": "cli.js",
   "scripts": {
-    "dev": "node ./cli.js --ossBaseDir=dev --clean"
+    "dev": "node ./cli.js --oss-base-dir dev --clean"
   },
   "bin": {
     "upload-oss": "./cli.js"
@@ -11,7 +11,11 @@
   "repository": "git@github.com:jarvisniu/upload-oss.git",
   "author": "Jarvis Niu <jarvisniu@gmail.com>",
   "license": "MIT",
-  "keywords": ["aliyun", "oss", "upload"],
+  "keywords": [
+    "aliyun",
+    "oss",
+    "upload"
+  ],
   "dependencies": {
     "ali-oss": "^6.1.0",
     "dotenv": "^6.2.0",
