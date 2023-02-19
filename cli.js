@@ -10,7 +10,7 @@ const relative = require('relative')
 
 if (process.env.OSS_ACCESS_KEY_ID == null) {
   ora().fail('[upload-oss] No .env file found, uploading canceled!\nSee: https://www.npmjs.com/package/@jarvisniu/upload-oss#usage')
-  process.exit()
+  process.exit(1)
 }
 
 const client = new OSS({
@@ -30,7 +30,7 @@ const allowedArgs = ['_', 'output-dir', 'oss-base-dir', 'clean']
 Object.keys(args).forEach(arg => {
   if (!allowedArgs.includes(arg)) {
     ora().fail(`[upload-oss] Unknown arg "${arg}" provided, program stopped!`)
-    process.exit()
+    process.exit(1)
   }
 })
 
@@ -68,7 +68,7 @@ async function main () {
   })
   if (localFiles.length === 0) {
     ora().fail('[upload-oss] No local files found, uploading canceled!')
-    return
+    process.exit(1)
   }
 
   await uploadOss(localFiles)
@@ -87,7 +87,7 @@ async function uploadOss (localFiles) {
     } catch (err) {
       spinner.fail(progressMsg(i, len, `Upload ${ file.relativePath } failed.`))
       ora().fail(`[upload-oss] Error: ${err.message} Uploading canceled!`)
-      process.exit()
+      process.exit(1)
     }
   }
   spinner.succeed(progressMsg(localFiles.length, localFiles.length, `Upload completed!`))
